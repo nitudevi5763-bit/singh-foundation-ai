@@ -123,6 +123,30 @@
     typingIndicator.hidden = true;
   }
 
+  function appendConfirmationCard() {
+    const card = document.createElement('div');
+    card.className = 'confirmation-card';
+    card.innerHTML =
+      '<div class="check-icon">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+      '</div>' +
+      '<div class="confirmation-card-text">' +
+        '<strong>You\'re all set!</strong>' +
+        '<span>Singh Foundation has your details — the team will reach out shortly.</span>' +
+      '</div>';
+    chatMessages.appendChild(card);
+    scrollToBottom();
+  }
+
+  // Strips the model's invisible [[CONFIRMED]] token from the displayed text.
+  // Returns { cleanText, wasConfirmed } so the caller can show the card once.
+  const CONFIRMATION_TOKEN_RE = /\s*\[\[CONFIRMED\]\]\s*$/i;
+  function extractConfirmation(rawText) {
+    const wasConfirmed = CONFIRMATION_TOKEN_RE.test(rawText);
+    const cleanText = rawText.replace(CONFIRMATION_TOKEN_RE, '').trim();
+    return { cleanText: cleanText || rawText, wasConfirmed };
+  }
+
   function setSending(state) {
     isWaitingForResponse = state;
     sendBtn.disabled = state;
@@ -233,14 +257,16 @@
       }
 
       const data = await res.json();
-      const replyText = (data && data.reply) ? data.reply : "Sorry, I didn't quite catch that — could you rephrase?";
+      const rawReply = (data && data.reply) ? data.reply : "Sorry, I didn't quite catch that — could you rephrase?";
+      const { cleanText: replyText, wasConfirmed } = extractConfirmation(rawReply);
 
       hideTyping();
       appendMessage('bot', replyText);
+      if (wasConfirmed) appendConfirmationCard();
       conversationHistory.push({ role: 'model', text: replyText });
 
       lastBotAskedForName = botMessageAskedForName(replyText);
-      maybeFireLeadEmail();
+      maybeFireLeadEmail(); // safe to call every turn — internally guarded against double-fire
 
     } catch (err) {
       clearTimeout(timeoutId);
