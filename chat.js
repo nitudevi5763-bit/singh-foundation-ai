@@ -12,9 +12,9 @@
      --------------------------------------------------------------------- */
 
   // EmailJS — shared master template across all Auren.ai clients. Reuse as-is.
-  const EMAILJS_SERVICE_ID  = 'service_auren_master';
-  const EMAILJS_TEMPLATE_ID = 'template_auren_lead';
-  const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY'; // fill from Auren.ai EmailJS account
+  const EMAILJS_SERVICE_ID  = 'service_xmzpo7h';
+  const EMAILJS_TEMPLATE_ID = 'template_imy3ypj';
+  const EMAILJS_PUBLIC_KEY  = 'J09sX-M5eqwPj4Qik'; // fill from Auren.ai EmailJS account
 
   // This client's details — set once per build
   const CLIENT_CONFIG = {
