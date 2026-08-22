@@ -20,6 +20,7 @@
   #sidebar-toggle        -> mobile button that opens/closes #sidebar
   #sidebar-backdrop      -> click-outside-to-close layer for mobile sidebar
   .quick-contact-btn     -> call + WhatsApp icons in header, always visible (not gated behind the mobile sidebar)
+  .confirmation-card     -> green "you're all set" card; chat.js injects this into #chat-messages when the model's reply ends with [[CONFIRMED]]
   #char-counter          -> optional live character count for #chat-input
   ============================================================================
 -->
@@ -511,6 +512,49 @@ body {
 @keyframes typingBounce {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Booking / lead confirmation card — shown once Sara confirms a callback/consultation */
+.confirmation-card {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(72ch, 78vw);
+  padding: 13px 16px;
+  margin-left: 40px; /* aligns under the avatar column above it */
+  background: linear-gradient(135deg, rgba(52,199,89,0.16), rgba(52,199,89,0.07));
+  border: 1px solid rgba(52,199,89,0.4);
+  border-radius: var(--sf-radius-md);
+  box-shadow: var(--sf-shadow-float);
+  animation: msgIn 0.3s ease both;
+}
+.confirmation-card .check-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #34C759;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 3px rgba(52,199,89,0.18);
+}
+.confirmation-card .check-icon svg { width: 15px; height: 15px; color: white; }
+.confirmation-card-text strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #34C759;
+  margin-bottom: 1px;
+}
+.confirmation-card-text span {
+  font-size: 12px;
+  color: var(--sf-ink-soft);
+  line-height: 1.4;
+}
+@media (max-width: 880px) {
+  .confirmation-card { margin-left: 0; }
 }
 
 /* Quick replies */
