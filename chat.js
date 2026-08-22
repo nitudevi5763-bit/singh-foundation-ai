@@ -196,7 +196,10 @@
   function maybeFireLeadEmail() {
     if (hasFiredLeadEmail) return;
     if (!leadInfo.name) return; // name is the minimum bar before we notify
-    if (!window.emailjs || typeof window.emailjs.send !== 'function') return;
+    if (!window.emailjs || typeof window.emailjs.send !== 'function') {
+      console.warn('EmailJS SDK not loaded — lead email was not sent. Check that the EmailJS <script> tag is present in index.html.');
+      return;
+    }
 
     hasFiredLeadEmail = true; // guard against double-fire in one session
 
