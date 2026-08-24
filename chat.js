@@ -18,7 +18,7 @@
 
   // This client's details — set once per build
   const CLIENT_CONFIG = {
-    to_email: 'Singh.foundation@gmail.com',
+    to_email: 'Saraluthra13@gmail.com',
     business_name: 'Singh Foundation',
     bot_name: 'Sara'
   };
@@ -37,6 +37,7 @@
   const sidebar        = document.getElementById('sidebar');
   const sidebarToggle  = document.getElementById('sidebar-toggle');
   const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const langSelectRow = document.getElementById('lang-select');
 
   /* ---------------------------------------------------------------------
      3. STATE
@@ -227,14 +228,18 @@
   /* ---------------------------------------------------------------------
      7. SEND FLOW
      --------------------------------------------------------------------- */
-  async function sendMessage(rawText) {
+  async function sendMessage(rawText, options) {
+    options = options || {};
     const text = (rawText || '').trim();
     if (!text || isWaitingForResponse) return;
 
     if (!quickReplies.hidden) quickReplies.hidden = true;
+    if (langSelectRow && !langSelectRow.hidden) langSelectRow.hidden = true;
 
-    appendMessage('user', text);
-    tryExtractContact(text);
+    if (!options.hideUserBubble) {
+      appendMessage('user', text);
+      tryExtractContact(text);
+    }
     conversationHistory.push({ role: 'user', text: text });
 
     chatInput.value = '';
@@ -308,6 +313,18 @@
     const msg = btn.getAttribute('data-message');
     if (msg) sendMessage(msg);
   });
+
+  if (langSelectRow) {
+    langSelectRow.addEventListener('click', function (e) {
+      const btn = e.target.closest('.lang-pill-btn');
+      if (!btn) return;
+      const lang = btn.getAttribute('data-lang');
+      const instruction = lang === 'hindi'
+        ? 'Please continue this entire conversation in Hindi (Devanagari script) from now on.'
+        : 'Please continue this entire conversation in Punjabi (Gurmukhi script) from now on.';
+      sendMessage(instruction, { hideUserBubble: true });
+    });
+  }
 
   if (sidebarToggle) {
     sidebarToggle.addEventListener('click', function () {
