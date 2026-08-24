@@ -21,6 +21,7 @@
   #sidebar-backdrop      -> click-outside-to-close layer for mobile sidebar
   .quick-contact-btn     -> call + WhatsApp icons in header, always visible (not gated behind the mobile sidebar)
   .confirmation-card     -> green "you're all set" card; chat.js injects this into #chat-messages when the model's reply ends with [[CONFIRMED]]
+  #lang-select            -> floating Hindi/Punjabi pill row shown once at the start; .lang-pill-btn has data-lang="hindi"|"punjabi"
   #char-counter          -> optional live character count for #chat-input
   ============================================================================
 -->
@@ -480,6 +481,43 @@ body {
   margin: 0;
 }
 
+/* Language selector — floating pills offering Hindi / Punjabi at the start of the chat */
+.lang-select-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.lang-select-row[hidden] { display: none; }
+.lang-pill-btn {
+  font-family: var(--sf-font-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sf-white);
+  background: linear-gradient(135deg, var(--sf-orange), var(--sf-fern));
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--sf-radius-pill);
+  cursor: pointer;
+  box-shadow: var(--sf-shadow-float);
+  animation: langPillFloat 2.6s ease-in-out infinite;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.lang-pill-btn:nth-child(2) { animation-delay: 0.4s; }
+.lang-pill-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: var(--sf-shadow-md), var(--sf-glow-orange);
+}
+.lang-pill-btn:active { transform: translateY(0) scale(0.96); }
+@keyframes langPillFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lang-pill-btn { animation: none; }
+}
+
 /* Typing indicator */
 #typing-indicator {
   align-self: flex-start;
@@ -885,6 +923,10 @@ body {
           </div>
           <h1 class="welcome-title">Welcome to Singh Foundation</h1>
           <p class="welcome-sub">I'm Sara, your New Zealand study &amp; visa assistant. Ask me about courses, admissions, or your Study Visa — I'm happy to help.</p>
+          <div id="lang-select" class="lang-select-row">
+            <button class="lang-pill-btn" type="button" data-lang="hindi">हिंदी में जारी रखें</button>
+            <button class="lang-pill-btn" type="button" data-lang="punjabi">ਪੰਜਾਬੀ ਵਿੱਚ ਜਾਰੀ ਰੱਖੋ</button>
+          </div>
         </div>
 
         <div class="msg-row bot">
