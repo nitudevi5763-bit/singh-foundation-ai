@@ -45,7 +45,6 @@
   let conversationHistory = []; // [{role: 'user'|'model', text: '...'}]
   let isWaitingForResponse = false;
   let hasFiredLeadEmail = false;
-  let lastBotAskedForName = false;
 
   const leadInfo = {
     name: null,
@@ -139,13 +138,22 @@
     scrollToBottom();
   }
 
-  // Strips the model's invisible [[CONFIRMED]] token from the displayed text.
-  // Returns { cleanText, wasConfirmed } so the caller can show the card once.
-  const CONFIRMATION_TOKEN_RE = /\s*\[\[CONFIRMED\]\]\s*$/i;
+  // Extracts the model's invisible [[CONFIRMED:NAME=...|PHONE=...]] token from the
+  // displayed text. The AI fills this in itself (it understands context correctly),
+  // so we trust it directly instead of guessing from raw chat messages.
+  const CONFIRMATION_TOKEN_RE = /\s*\[\[CONFIRMED:NAME=([^|]+)\|PHONE=([^\]]+)\]\]\s*$/i;
   function extractConfirmation(rawText) {
-    const wasConfirmed = CONFIRMATION_TOKEN_RE.test(rawText);
+    const match = rawText.match(CONFIRMATION_TOKEN_RE);
     const cleanText = rawText.replace(CONFIRMATION_TOKEN_RE, '').trim();
-    return { cleanText: cleanText || rawText, wasConfirmed };
+    if (!match) {
+      return { cleanText: cleanText || rawText, wasConfirmed: false, confirmedName: null, confirmedPhone: null };
+    }
+    return {
+      cleanText: cleanText || rawText,
+      wasConfirmed: true,
+      confirmedName: match[1].trim(),
+      confirmedPhone: match[2].trim()
+    };
   }
 
   function setSending(state) {
@@ -161,42 +169,23 @@
 
   /* ---------------------------------------------------------------------
      6. LEAD DETECTION
-     Mirrors backend LEAD CAPTURE ORDER: name before phone, never both at once.
+     Name + phone are no longer guessed from chat text — the AI provides
+     them directly, verified, inside the [[CONFIRMED:NAME=...|PHONE=...]]
+     token (see extractConfirmation below). We only opportunistically catch
+     an email address here in case a visitor volunteers one, since the AI
+     no longer asks for it.
      --------------------------------------------------------------------- */
-  const PHONE_RE = /(\+?\d[\d\s-]{8,14}\d)/;
   const EMAIL_RE = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/;
 
   function tryExtractContact(userText) {
-    const phoneMatch = userText.match(PHONE_RE);
-    if (phoneMatch && !leadInfo.phone) leadInfo.phone = phoneMatch[1].trim();
-
     const emailMatch = userText.match(EMAIL_RE);
     if (emailMatch && !leadInfo.email) leadInfo.email = emailMatch[1].trim();
-
-    // Fallback name capture: if the bot's last message asked for a name,
-    // and this reply is short + plausible, treat it as the name even
-    // without a strict "my name is X" phrase.
-    if (!leadInfo.name && lastBotAskedForName) {
-      const trimmed = userText.trim();
-      const wordCount = trimmed.split(/\s+/).length;
-      const looksLikeName = /^[a-zA-Z\s.]{2,40}$/.test(trimmed) && wordCount <= 4;
-      if (looksLikeName) leadInfo.name = trimmed;
-    }
-
-    // Explicit phrasing fallback: "my name is X" / "naam X hai"
-    const nameMatch = userText.match(/(?:my name is|i am|i'm|naam)\s+([a-zA-Z\s.]{2,40})/i);
-    if (nameMatch && !leadInfo.name) leadInfo.name = nameMatch[1].trim();
-
     leadInfo.lastUserMessage = userText;
-  }
-
-  function botMessageAskedForName(botText) {
-    return /\b(name|naam)\b/i.test(botText);
   }
 
   function maybeFireLeadEmail() {
     if (hasFiredLeadEmail) return;
-    if (!leadInfo.name) return; // name is the minimum bar before we notify
+    if (!leadInfo.name || !leadInfo.phone) return; // both required — set from the AI's confirmation token
     if (!window.emailjs || typeof window.emailjs.send !== 'function') {
       console.warn('EmailJS SDK not loaded — lead email was not sent. Check that the EmailJS <script> tag is present in index.html.');
       return;
@@ -266,15 +255,18 @@
 
       const data = await res.json();
       const rawReply = (data && data.reply) ? data.reply : "Sorry, I didn't quite catch that — could you rephrase?";
-      const { cleanText: replyText, wasConfirmed } = extractConfirmation(rawReply);
+      const { cleanText: replyText, wasConfirmed, confirmedName, confirmedPhone } = extractConfirmation(rawReply);
 
       hideTyping();
       appendMessage('bot', replyText);
-      if (wasConfirmed) appendConfirmationCard();
       conversationHistory.push({ role: 'model', text: replyText });
 
-      lastBotAskedForName = botMessageAskedForName(replyText);
-      maybeFireLeadEmail(); // safe to call every turn — internally guarded against double-fire
+      if (wasConfirmed) {
+        leadInfo.name = confirmedName;
+        leadInfo.phone = confirmedPhone;
+        appendConfirmationCard();
+        maybeFireLeadEmail();
+      }
 
     } catch (err) {
       clearTimeout(timeoutId);
